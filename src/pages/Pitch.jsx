@@ -15,6 +15,7 @@ import {
 } from '../components/ui'
 import { pitchLibrary, escalationRules, guidanceEvents } from '../data/mockData'
 import { cx } from '../lib/utils'
+import PitchTrackerDemo from '../components/PitchTrackerDemo'
 
 export default function Pitch() {
   return (
@@ -23,6 +24,11 @@ export default function Pitch() {
         title="Pitch Guidance & CRM"
         subtitle="Founder-approved pitches, live red/green feedback & escalation rules"
       />
+
+      {/* Interactive presenter-controlled demo */}
+      <MotionItem>
+        <PitchTrackerDemo />
+      </MotionItem>
 
       {/* Red/Green legend demonstration */}
       <MotionItem>

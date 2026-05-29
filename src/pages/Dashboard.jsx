@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   ArrowRight,
   Sparkles,
+  Headphones,
+  Zap,
 } from 'lucide-react'
 import {
   PieChart,
@@ -25,16 +27,18 @@ import {
   AnimatedNumber,
   ProgressRing,
   Badge,
+  SentimentBadge,
   MotionItem,
 } from '../components/ui'
 import {
   dashboardKpis,
-  founderVsTeam,
+  liveTracking,
   salesWorkflow,
   todaySentiment,
   connectedSystems,
   expectedImpact,
 } from '../data/mockData'
+import { scoreHex } from '../lib/utils'
 
 export default function Dashboard() {
   const totalFunnel = salesWorkflow[0].count
@@ -73,48 +77,71 @@ export default function Dashboard() {
         <StatCard icon={AlertTriangle} label="Escalations Today" value={dashboardKpis.escalationsToday} delta="1" deltaDir="up" tone="red" />
       </div>
 
-      {/* Problem visualized + Sentiment snapshot */}
+      {/* Live salesperson tracking + Sentiment snapshot */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* The Problem, Visualized */}
+        {/* Live Salesperson Tracking — the product's core */}
         <MotionItem delay={0.05} className="lg:col-span-2">
           <Card className="p-6 h-full">
             <CardHeader
-              title="The Problem, Visualized"
-              subtitle="Why R Angle needs AI-driven monitoring"
-              icon={AlertTriangle}
+              title="Live Salesperson Tracking"
+              subtitle="Every rep's call monitored in real time"
+              icon={Headphones}
+              right={
+                <Link
+                  to="/live"
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent-dark hover:text-accent"
+                >
+                  Open cockpit <ArrowRight size={15} />
+                </Link>
+              }
             />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
-              <div className="flex flex-col items-center text-center">
-                <ProgressRing value={founderVsTeam.founder.value} max={100} color="#16A34A">
-                  <div>
-                    <div className="text-3xl font-bold text-positive">
-                      <AnimatedNumber value={100} suffix="%" />
-                    </div>
-                    <div className="text-[11px] text-ink-400 font-medium">conversion</div>
+            <div className="space-y-2.5">
+              {liveTracking.map((t) => (
+                <Link
+                  key={t.rep}
+                  to="/live"
+                  className="flex items-center gap-4 rounded-xl border border-slate-200 p-3 hover:bg-slate-50 hover:shadow-soft transition"
+                >
+                  <div className="relative">
+                    <span className="grid place-items-center w-10 h-10 rounded-full bg-brand-700 text-white text-xs font-bold">
+                      {t.avatar}
+                    </span>
+                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-red-500 border-2 border-white animate-pulseDot" />
                   </div>
-                </ProgressRing>
-                <div className="mt-3 font-semibold text-ink-900">Founder</div>
-                <div className="text-xs text-ink-400">{founderVsTeam.founder.name}</div>
-                <Badge color="green" className="mt-2">Gold standard</Badge>
-              </div>
-              <div className="flex flex-col items-center text-center">
-                <ProgressRing value={founderVsTeam.team.value} max={100} color="#DC2626">
-                  <div>
-                    <div className="text-3xl font-bold text-negative">
-                      <AnimatedNumber value={4} suffix="%" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold text-ink-900 truncate">{t.rep}</div>
+                    <div className="text-[11px] text-ink-400 truncate">
+                      with {t.customer} · {t.duration}
                     </div>
-                    <div className="text-[11px] text-ink-400 font-medium">conversion</div>
                   </div>
-                </ProgressRing>
-                <div className="mt-3 font-semibold text-ink-900">Sales Team</div>
-                <div className="text-xs text-ink-400">25 : 1 lead-to-conversion ratio</div>
-                <Badge color="red" className="mt-2">The gap to close</Badge>
-              </div>
+                  <SentimentBadge sentiment={t.sentiment} />
+                  {/* live green/red pitch-guidance pulse */}
+                  <span
+                    className={
+                      'hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border ' +
+                      (t.lastGuidance === 'green'
+                        ? 'text-positive bg-emerald-50 border-emerald-200'
+                        : 'text-negative bg-red-50 border-red-200')
+                    }
+                  >
+                    <Zap size={11} />
+                    {t.lastGuidance === 'green' ? 'On script' : 'Off script'}
+                  </span>
+                  <div className="text-right w-12">
+                    <div className="text-lg font-bold leading-none" style={{ color: scoreHex(t.score) }}>
+                      {t.score.toFixed(1)}
+                    </div>
+                    <div className="text-[10px] text-ink-400">score</div>
+                  </div>
+                </Link>
+              ))}
             </div>
-            <div className="mt-5 rounded-xl bg-slate-50 border border-slate-200 p-4 text-sm text-ink-600">
-              <span className="font-semibold text-ink-900">The opportunity:</span> the founder's
-              instinct converts every premium lead. The AI model captures that playbook —
-              scoring, sentiment, live guidance & escalation — and scales it across the team.
+            <div className="mt-4 rounded-xl bg-slate-50 border border-slate-200 p-4 text-sm text-ink-600">
+              <span className="font-semibold text-ink-900">How it works:</span> the AI listens to
+              every live call, scores intent in real time, and shows each rep a
+              <span className="text-positive font-semibold"> green</span> /
+              <span className="text-negative font-semibold"> red</span> cue for whether they spoke
+              the recommended pitch — escalating premium calls the moment a rep goes off script.
             </div>
           </Card>
         </MotionItem>

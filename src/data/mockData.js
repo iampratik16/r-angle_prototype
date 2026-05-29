@@ -404,6 +404,102 @@ export const escalationRules = [
 ]
 
 // ---------------------------------------------------------------------
+// LIVE SALESPERSON TRACKING (Dashboard hero — fleet snapshot)
+// Every rep on a call is monitored in real time. Consistent with
+// otherCalls + team compliance numbers.
+// ---------------------------------------------------------------------
+export const liveTracking = [
+  {
+    rep: 'Priyanka Sahoo',
+    avatar: 'PS',
+    customer: 'Ananya & Subham Mishra',
+    sentiment: 'positive',
+    score: 6.4,
+    compliance: 78,
+    lastGuidance: 'green',
+    duration: '06:20',
+  },
+  {
+    rep: 'Debashish Patnaik',
+    avatar: 'DP',
+    customer: 'Rohit Pradhan',
+    sentiment: 'positive',
+    score: 6.8,
+    compliance: 86,
+    lastGuidance: 'green',
+    duration: '07:12',
+  },
+  {
+    rep: 'Manoj Swain',
+    avatar: 'MS',
+    customer: 'Sasmita Nayak',
+    sentiment: 'negative',
+    score: 3.1,
+    compliance: 51,
+    lastGuidance: 'red',
+    duration: '02:48',
+  },
+]
+
+// ---------------------------------------------------------------------
+// INTERACTIVE PITCH-TRACKER DEMO (presenter-controlled, Section 8/9 · F)
+// A click-through demo: for each recommended phrase the presenter marks
+// whether the rep SPOKE it (GREEN, score +delta) or SKIPPED it (RED).
+// Two+ skips trigger an escalation to the founder.
+// ---------------------------------------------------------------------
+export const pitchTrackerDemo = {
+  customer: {
+    name: 'Ananya & Subham Mishra',
+    note: 'Hot ICP · LinkedIn · married couple, 28 · ₹18–25 L · 3BHK Bhubaneswar',
+  },
+  rep: { name: 'Priyanka Sahoo', avatar: 'PS', role: 'Sales Rep' },
+  startScore: 4.0,
+  escalateAfterMisses: 2,
+  steps: [
+    {
+      id: 's1',
+      cue: 'Call opens — build rapport & state the core USP.',
+      trigger: 'Opening / rapport',
+      phrase: 'Our in-house design team guarantees on-time delivery — that\'s our core USP.',
+      usp: 'In-house team · on-time delivery',
+      delta: 0.5,
+    },
+    {
+      id: 's2',
+      cue: 'Customer worried about price — handle the objection.',
+      trigger: 'Price objection',
+      phrase: 'Let me show you our flexible budget calculator so we tailor the scope to your range.',
+      usp: 'Flexible budgeting · transparency',
+      delta: 0.6,
+    },
+    {
+      id: 's3',
+      cue: 'Customer asks how they\'ll see progress — build trust.',
+      trigger: 'Quality concern',
+      phrase: 'Every project is monitored on Dezylo so you get real-time progress visibility.',
+      usp: 'Tech-enabled tracking',
+      delta: 0.4,
+    },
+    {
+      id: 's4',
+      cue: 'Buying signals rising — move to commitment.',
+      trigger: 'Closing / commitment',
+      phrase: 'A refundable ₹500 site visit lets you experience our material quality first-hand.',
+      usp: '₹500 site-visit signal',
+      delta: 0.7,
+    },
+    {
+      id: 's5',
+      cue: 'Good fit for an upsell — propose the add-on.',
+      trigger: 'Upsell',
+      phrase: 'For couples your age we often add a smart-home package — shall I include an estimate?',
+      usp: 'Upsell · lifestyle fit',
+      delta: 0.3,
+    },
+  ],
+}
+
+// ---------------------------------------------------------------------
 // FOUNDER CONTROL LAYER (Section 11 / component H)
 // ---------------------------------------------------------------------
 export const founderControls = [
