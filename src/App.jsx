@@ -9,6 +9,7 @@ import Live from './pages/Live'
 import Pitch from './pages/Pitch'
 import Performance from './pages/Performance'
 import Founder from './pages/Founder'
+import CallAnalysis from './pages/CallAnalysis'
 
 export default function App() {
   // Mobile drawer state — sidebar is a slide-in drawer below lg, static above.
@@ -27,6 +28,7 @@ export default function App() {
             <Route path="/live" element={<Live />} />
             <Route path="/pitch" element={<Pitch />} />
             <Route path="/performance" element={<Performance />} />
+            <Route path="/analysis" element={<CallAnalysis />} />
             <Route path="/founder" element={<Founder />} />
           </Routes>
         </main>

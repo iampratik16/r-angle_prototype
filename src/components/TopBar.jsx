@@ -6,6 +6,7 @@ const titles = {
   '/leads': 'Lead Intelligence',
   '/scoring': 'Intent Scoring Engine',
   '/live': 'Live Call Monitoring',
+  '/analysis': 'Call Analysis',
   '/pitch': 'Pitch Guidance & CRM',
   '/performance': 'Performance & Incentives',
   '/founder': 'Founder Control Layer',

@@ -23,3 +23,9 @@ pnpm-debug.log*
 .env
 .env.*
 !.env.example
+
+# GCP credentials — never commit service-account keys
+*service-account*.json
+*gcp-key*.json
+**/keys/
+server/credentials.json

@@ -35,6 +35,19 @@ npm run build    # production build
 npm run preview  # preview the production build
 ```
 
+### Call Analysis backend (real Gemini analysis)
+
+The **Call Analysis** page (`/analysis`) is powered by a small backend that uploads recordings to Google Cloud Storage and analyses them with Vertex AI Gemini. See [`server/README.md`](server/README.md) for the full Google Cloud setup.
+
+```bash
+cd server
+npm install
+cp .env.example .env   # fill in GCP project, bucket, credentials
+npm run dev            # http://localhost:8787
+```
+
+Until credentials are added, the dashboard shows a "setup pending" banner; the rest of the app runs fully offline.
+
 ## 🗺️ Modules / Routes
 
 | Route | Module |
@@ -43,6 +56,7 @@ npm run preview  # preview the production build
 | `/leads` | Lead Intelligence — ICP & segmentation |
 | `/scoring` | Intent Scoring Engine (0–10) |
 | `/live` | **🔴 Live Call Monitoring & Sentiment Tracking (hero)** |
+| `/analysis` | **Call Analysis — upload a recording, Gemini analyses it (real)** |
 | `/pitch` | Pitch Guidance & CRM |
 | `/performance` | Performance & Incentives (ISM) |
 | `/founder` | Founder Control Layer |

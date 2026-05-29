@@ -7,6 +7,7 @@ import {
   MessageSquareText,
   Trophy,
   ShieldCheck,
+  AudioLines,
   X,
 } from 'lucide-react'
 import { cx } from '../lib/utils'
@@ -16,6 +17,7 @@ const nav = [
   { to: '/leads', label: 'Lead Intelligence', icon: Users },
   { to: '/scoring', label: 'Intent Scoring Engine', icon: Gauge },
   { to: '/live', label: 'Live Call Monitoring', icon: Radio, live: true },
+  { to: '/analysis', label: 'Call Analysis', icon: AudioLines },
   { to: '/pitch', label: 'Pitch Guidance & CRM', icon: MessageSquareText },
   { to: '/performance', label: 'Performance & Incentives', icon: Trophy },
   { to: '/founder', label: 'Founder Control Layer', icon: ShieldCheck },
