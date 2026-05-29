@@ -1,7 +1,12 @@
 // =====================================================================
 // R Angle — Call Analysis API
-// Upload a call recording -> store in Cloud Storage -> analyse with
-// Vertex AI Gemini -> return + persist a structured report.
+// Upload a call recording -> Gemini analyses it -> structured report.
+//
+// Two providers, auto-selected from server/.env:
+//   • GEMINI_API_KEY set        -> Google AI Studio (Gemini Files API).
+//                                  No GCP roles / bucket needed. Easiest.
+//   • else Vertex AI creds set  -> Vertex AI + Cloud Storage (GCP credit).
+// Analyses are persisted to server/data/*.json so history survives restarts.
 // =====================================================================
 import 'dotenv/config'
 import express from 'express'
@@ -11,13 +16,15 @@ import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
+import { fileURLToPath } from 'node:url'
+import { GoogleGenAI, createPartFromUri, createUserContent } from '@google/genai'
 import { Storage } from '@google-cloud/storage'
-import { VertexAI } from '@google-cloud/vertexai'
 import { analysisSchema } from './schema.js'
 import { SYSTEM_INSTRUCTION, buildUserInstruction } from './prompt.js'
 
 const {
   PORT = 8787,
+  GEMINI_API_KEY,
   GCP_PROJECT_ID,
   GCP_LOCATION = 'us-central1',
   GCS_BUCKET,
@@ -25,16 +32,40 @@ const {
   ALLOWED_ORIGIN = 'http://localhost:5173',
 } = process.env
 
-// We need a project, a bucket, and credentials on disk to go live.
-const credsConfigured = Boolean(
-  GCP_PROJECT_ID && GCS_BUCKET && process.env.GOOGLE_APPLICATION_CREDENTIALS
-)
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const DATA_DIR = path.join(__dirname, '..', 'data')
 
-const app = express()
-app.use(cors({ origin: ALLOWED_ORIGIN.split(',').map((s) => s.trim()) }))
-app.use(express.json({ limit: '2mb' }))
+// Provider selection — API key wins (simplest); else Vertex if creds exist.
+const mode = GEMINI_API_KEY
+  ? 'apikey'
+  : GCP_PROJECT_ID && process.env.GOOGLE_APPLICATION_CREDENTIALS
+    ? 'vertex'
+    : null
+const configured = Boolean(mode)
 
-const upload = multer({ dest: os.tmpdir(), limits: { fileSize: 80 * 1024 * 1024 } }) // 80 MB
+let ai
+let storage
+if (mode === 'apikey') {
+  ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY })
+} else if (mode === 'vertex') {
+  ai = new GoogleGenAI({ vertexai: true, project: GCP_PROJECT_ID, location: GCP_LOCATION })
+  if (GCS_BUCKET) storage = new Storage({ projectId: GCP_PROJECT_ID })
+}
+
+// @google/genai expects Schema.type as an uppercase enum ('OBJECT', 'STRING'…).
+// Our schema.js uses lowercase for readability — normalise just the `type` keys.
+function normaliseTypes(node) {
+  if (Array.isArray(node)) return node.map(normaliseTypes)
+  if (node && typeof node === 'object') {
+    const out = {}
+    for (const [k, v] of Object.entries(node)) {
+      out[k] = k === 'type' && typeof v === 'string' ? v.toUpperCase() : normaliseTypes(v)
+    }
+    return out
+  }
+  return node
+}
+const responseSchema = normaliseTypes(analysisSchema)
 
 const mimeByExt = {
   '.mp3': 'audio/mpeg',
@@ -48,30 +79,30 @@ const mimeByExt = {
   '.webm': 'video/webm',
 }
 
-let storage
-let vertex
-if (credsConfigured) {
-  storage = new Storage({ projectId: GCP_PROJECT_ID })
-  vertex = new VertexAI({ project: GCP_PROJECT_ID, location: GCP_LOCATION })
-}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-// ── Health: lets the dashboard show a "setup pending" banner ──────────
+const app = express()
+app.use(cors({ origin: ALLOWED_ORIGIN.split(',').map((s) => s.trim()) }))
+app.use(express.json({ limit: '2mb' }))
+const upload = multer({ dest: os.tmpdir(), limits: { fileSize: 80 * 1024 * 1024 } }) // 80 MB
+
+// ── Health ────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
-    credsConfigured,
+    credsConfigured: configured,
+    mode,
+    model: GEMINI_MODEL,
     project: GCP_PROJECT_ID || null,
     bucket: GCS_BUCKET || null,
-    model: GEMINI_MODEL,
   })
 })
 
 // ── Analyse a recording ───────────────────────────────────────────────
 app.post('/api/analyze', upload.single('audio'), async (req, res) => {
-  if (!credsConfigured) {
+  if (!configured) {
     return res.status(503).json({
-      error:
-        'GCP credentials not configured. Fill server/.env (see server/.env.example) and restart the API.',
+      error: 'No Gemini provider configured. Set GEMINI_API_KEY (or Vertex creds) in server/.env and restart.',
     })
   }
   if (!req.file) {
@@ -87,46 +118,49 @@ app.post('/api/analyze', upload.single('audio'), async (req, res) => {
   const ext = path.extname(req.file.originalname).toLowerCase()
   const mimeType = mimeByExt[ext] || 'audio/mpeg'
   const id = randomUUID()
-  const destination = `calls/${id}${ext || '.mp3'}`
 
   try {
-    // 1) Upload the recording to Cloud Storage
-    await storage.bucket(GCS_BUCKET).upload(req.file.path, {
-      destination,
-      metadata: { contentType: mimeType },
-    })
-    const gsUri = `gs://${GCS_BUCKET}/${destination}`
+    let filePart
+    let audioUri = null
 
-    // 2) Ask Gemini to analyse the audio directly (no separate STT needed)
-    const model = vertex.getGenerativeModel({
+    if (mode === 'apikey') {
+      // Upload via the Gemini Files API and wait until it's ACTIVE.
+      let f = await ai.files.upload({ file: req.file.path, config: { mimeType } })
+      let tries = 0
+      while (f.state === 'PROCESSING' && tries < 90) {
+        await sleep(2000)
+        f = await ai.files.get({ name: f.name })
+        tries++
+      }
+      if (f.state === 'FAILED') throw new Error('Gemini could not process the audio file.')
+      filePart = createPartFromUri(f.uri, f.mimeType || mimeType)
+      audioUri = f.uri
+    } else {
+      // Vertex: stage the file in Cloud Storage, reference its gs:// URI.
+      const destination = `calls/${id}${ext || '.mp3'}`
+      await storage.bucket(GCS_BUCKET).upload(req.file.path, { destination, metadata: { contentType: mimeType } })
+      audioUri = `gs://${GCS_BUCKET}/${destination}`
+      filePart = createPartFromUri(audioUri, mimeType)
+    }
+
+    const resp = await ai.models.generateContent({
       model: GEMINI_MODEL,
-      systemInstruction: SYSTEM_INSTRUCTION,
-      generationConfig: {
+      contents: createUserContent([filePart, buildUserInstruction(meta)]),
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION,
         responseMimeType: 'application/json',
-        responseSchema: analysisSchema,
+        responseSchema,
         temperature: 0.4,
-        maxOutputTokens: 8192,
+        maxOutputTokens: 20000,
       },
     })
 
-    const result = await model.generateContent({
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { fileData: { fileUri: gsUri, mimeType } },
-            { text: buildUserInstruction(meta) },
-          ],
-        },
-      ],
-    })
-
-    const raw = result?.response?.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
+    const raw = resp.text || '{}'
     let analysis
     try {
       analysis = JSON.parse(raw)
     } catch {
-      return res.status(502).json({ error: 'Gemini returned malformed JSON.', raw })
+      return res.status(502).json({ error: 'Gemini returned malformed JSON.', raw: raw.slice(0, 2000) })
     }
 
     const record = {
@@ -134,15 +168,24 @@ app.post('/api/analyze', upload.single('audio'), async (req, res) => {
       createdAt: new Date().toISOString(),
       meta,
       fileName: req.file.originalname,
-      audioUri: gsUri,
+      audioUri,
+      mode,
       analysis,
     }
 
-    // 3) Persist the structured analysis next to the recording
-    await storage
-      .bucket(GCS_BUCKET)
-      .file(`analyses/${id}.json`)
-      .save(JSON.stringify(record), { contentType: 'application/json' })
+    // Persist locally (history) ...
+    await fs.mkdir(DATA_DIR, { recursive: true })
+    await fs.writeFile(path.join(DATA_DIR, `${id}.json`), JSON.stringify(record))
+    // ... and to GCS too when running on Vertex.
+    if (mode === 'vertex' && storage && GCS_BUCKET) {
+      try {
+        await storage.bucket(GCS_BUCKET).file(`analyses/${id}.json`).save(JSON.stringify(record), {
+          contentType: 'application/json',
+        })
+      } catch {
+        /* non-fatal */
+      }
+    }
 
     res.json(record)
   } catch (err) {
@@ -155,13 +198,12 @@ app.post('/api/analyze', upload.single('audio'), async (req, res) => {
 
 // ── List past analyses (most recent first) ────────────────────────────
 app.get('/api/analyses', async (_req, res) => {
-  if (!credsConfigured) return res.json({ items: [] })
   try {
-    const [files] = await storage.bucket(GCS_BUCKET).getFiles({ prefix: 'analyses/' })
+    await fs.mkdir(DATA_DIR, { recursive: true })
+    const files = (await fs.readdir(DATA_DIR)).filter((f) => f.endsWith('.json'))
     const items = await Promise.all(
       files.map(async (f) => {
-        const [buf] = await f.download()
-        const r = JSON.parse(buf.toString())
+        const r = JSON.parse(await fs.readFile(path.join(DATA_DIR, f), 'utf8'))
         return {
           id: r.id,
           createdAt: r.createdAt,
@@ -182,19 +224,16 @@ app.get('/api/analyses', async (_req, res) => {
 
 // ── Fetch one full analysis ───────────────────────────────────────────
 app.get('/api/analyses/:id', async (req, res) => {
-  if (!credsConfigured) return res.status(503).json({ error: 'Not configured.' })
   try {
-    const [buf] = await storage.bucket(GCS_BUCKET).file(`analyses/${req.params.id}.json`).download()
-    res.json(JSON.parse(buf.toString()))
+    const r = JSON.parse(await fs.readFile(path.join(DATA_DIR, `${req.params.id}.json`), 'utf8'))
+    res.json(r)
   } catch {
     res.status(404).json({ error: 'Analysis not found.' })
   }
 })
 
 app.listen(PORT, () => {
-  console.log(`▸ R Angle Call-Analysis API listening on http://localhost:${PORT}`)
-  console.log(`  credentials configured: ${credsConfigured}`)
-  if (!credsConfigured) {
-    console.log('  → Fill server/.env (copy from server/.env.example) to enable Gemini.')
-  }
+  console.log(`▸ R Angle Call-Analysis API on http://localhost:${PORT}`)
+  console.log(`  provider mode: ${mode || 'NONE — set GEMINI_API_KEY in server/.env'}`)
+  console.log(`  model: ${GEMINI_MODEL}`)
 })

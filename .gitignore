@@ -29,3 +29,6 @@ pnpm-debug.log*
 *gcp-key*.json
 **/keys/
 server/credentials.json
+
+# Local call-analysis history (prototype)
+server/data/

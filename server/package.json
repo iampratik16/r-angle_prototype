@@ -3,14 +3,14 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Backend that uploads call recordings to GCS and analyses them with Vertex AI Gemini.",
+  "description": "Backend that analyses call recordings with Gemini (AI Studio API key or Vertex AI).",
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.13.0",
-    "@google-cloud/vertexai": "^1.9.0",
+    "@google/genai": "^1.52.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
