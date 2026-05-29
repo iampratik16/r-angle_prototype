@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom'
-import { Search, Bell } from 'lucide-react'
+import { Search, Bell, Menu } from 'lucide-react'
 
 const titles = {
   '/': 'Dashboard',
@@ -11,7 +11,7 @@ const titles = {
   '/founder': 'Founder Control Layer',
 }
 
-export default function TopBar() {
+export default function TopBar({ onMenuClick = () => {} }) {
   const { pathname } = useLocation()
   const title = titles[pathname] || 'R Angle'
   const today = new Date('2026-05-29T10:00:00').toLocaleDateString('en-IN', {
@@ -22,11 +22,20 @@ export default function TopBar() {
   })
 
   return (
-    <header className="sticky top-0 z-20 bg-canvas/80 backdrop-blur-md border-b border-slate-200">
-      <div className="flex items-center gap-4 px-6 h-16">
+    <header className="sticky top-0 z-30 bg-canvas/80 backdrop-blur-md border-b border-slate-200">
+      <div className="flex items-center gap-3 sm:gap-4 px-4 sm:px-6 h-16">
+        {/* Hamburger — mobile only */}
+        <button
+          onClick={onMenuClick}
+          className="lg:hidden grid place-items-center w-9 h-9 -ml-1 rounded-xl text-ink-600 hover:bg-white hover:shadow-soft border border-transparent hover:border-slate-200 shrink-0"
+          aria-label="Open menu"
+        >
+          <Menu size={20} />
+        </button>
+
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-ink-900 truncate">{title}</h2>
-          <p className="text-[11px] text-ink-400 -mt-0.5">{today}</p>
+          <h2 className="text-sm sm:text-base font-semibold text-ink-900 truncate">{title}</h2>
+          <p className="text-[11px] text-ink-400 -mt-0.5 truncate">{today}</p>
         </div>
 
         {/* Fake global search */}

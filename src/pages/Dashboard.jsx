@@ -44,31 +44,31 @@ export default function Dashboard() {
   const totalFunnel = salesWorkflow[0].count
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Header strip */}
       <MotionItem>
-        <div className="rounded-2xl bg-gradient-to-r from-brand-800 via-brand-700 to-brand-600 text-white p-6 shadow-lift relative overflow-hidden">
+        <div className="rounded-2xl bg-gradient-to-r from-brand-800 via-brand-700 to-brand-600 text-white p-5 sm:p-6 shadow-lift relative overflow-hidden">
           <div className="absolute -right-10 -top-10 w-52 h-52 rounded-full bg-accent/20 blur-2xl" />
           <div className="relative flex flex-wrap items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 text-accent-light text-xs font-semibold tracking-wide uppercase">
                 <Sparkles size={14} /> AI Sales Command Center
               </div>
-              <h1 className="text-2xl font-bold mt-1">R Angle — Sales Monitoring Model</h1>
+              <h1 className="text-xl sm:text-2xl font-bold mt-1">R Angle — Sales Monitoring Model</h1>
               <p className="text-white/70 text-sm mt-1">
                 Live-space interiors · Odisha → statewide expansion
               </p>
             </div>
-            <div className="flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-2">
-              <CheckCircle2 size={16} className="text-accent-light" />
-              <span className="text-sm font-medium">All systems connected</span>
+            <div className="flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-3 sm:px-4 py-2">
+              <CheckCircle2 size={16} className="text-accent-light shrink-0" />
+              <span className="text-xs sm:text-sm font-medium">All systems connected</span>
             </div>
           </div>
         </div>
       </MotionItem>
 
       {/* KPI row */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
         <StatCard icon={Users} label="Active Leads" value={dashboardKpis.activeLeads} delta="8%" tone="brand" />
         <StatCard icon={Flame} label="Hot Leads (ICP)" value={dashboardKpis.hotLeads} delta="12%" tone="red" />
         <StatCard icon={Gauge} label="Avg Interest Score" value={dashboardKpis.avgInterestScore} decimals={1} delta="0.4" tone="teal" />
@@ -78,7 +78,7 @@ export default function Dashboard() {
       </div>
 
       {/* Live salesperson tracking + Sentiment snapshot */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Live Salesperson Tracking — the product's core */}
         <MotionItem delay={0.05} className="lg:col-span-2">
           <Card className="p-6 h-full">
@@ -100,7 +100,7 @@ export default function Dashboard() {
                 <Link
                   key={t.rep}
                   to="/live"
-                  className="flex items-center gap-4 rounded-xl border border-slate-200 p-3 hover:bg-slate-50 hover:shadow-soft transition"
+                  className="flex items-center gap-2.5 sm:gap-4 rounded-xl border border-slate-200 p-2.5 sm:p-3 hover:bg-slate-50 hover:shadow-soft transition"
                 >
                   <div className="relative">
                     <span className="grid place-items-center w-10 h-10 rounded-full bg-brand-700 text-white text-xs font-bold">
@@ -258,7 +258,7 @@ export default function Dashboard() {
       </MotionItem>
 
       {/* Connected systems + Expected impact */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <MotionItem delay={0.12} className="lg:col-span-2">
           <Card className="p-6 h-full">
             <CardHeader title="Connected Systems" subtitle="Unified integration layer" icon={CheckCircle2} />

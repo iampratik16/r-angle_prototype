@@ -90,15 +90,15 @@ export function StatCard({ icon: Icon, label, value, decimals = 0, prefix = '', 
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <Card className="p-5 h-full">
+      <Card className="p-4 sm:p-5 h-full">
         <div className="flex items-start justify-between">
-          <span className={cx('grid place-items-center w-10 h-10 rounded-xl', tones[tone])}>
+          <span className={cx('grid place-items-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl', tones[tone])}>
             {Icon && <Icon size={20} />}
           </span>
           {delta != null && (
             <span
               className={cx(
-                'inline-flex items-center gap-0.5 text-xs font-semibold px-2 py-1 rounded-full',
+                'inline-flex items-center gap-0.5 text-[11px] sm:text-xs font-semibold px-1.5 sm:px-2 py-1 rounded-full',
                 up ? 'text-positive bg-emerald-50' : 'text-negative bg-red-50'
               )}
             >
@@ -106,7 +106,7 @@ export function StatCard({ icon: Icon, label, value, decimals = 0, prefix = '', 
             </span>
           )}
         </div>
-        <div className="mt-4 text-3xl font-bold text-ink-900 leading-none">
+        <div className="mt-3 sm:mt-4 text-2xl sm:text-3xl font-bold text-ink-900 leading-none">
           <AnimatedNumber value={value} decimals={decimals} prefix={prefix} suffix={suffix} />
         </div>
         <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-400">
