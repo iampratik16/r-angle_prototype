@@ -8,7 +8,6 @@ import Live from './pages/Live'
 import Pitch from './pages/Pitch'
 import Performance from './pages/Performance'
 import Founder from './pages/Founder'
-import Implementation from './pages/Implementation'
 
 export default function App() {
   return (
@@ -25,7 +24,6 @@ export default function App() {
             <Route path="/pitch" element={<Pitch />} />
             <Route path="/performance" element={<Performance />} />
             <Route path="/founder" element={<Founder />} />
-            <Route path="/implementation" element={<Implementation />} />
           </Routes>
         </main>
       </div>

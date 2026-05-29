@@ -9,7 +9,6 @@ const titles = {
   '/pitch': 'Pitch Guidance & CRM',
   '/performance': 'Performance & Incentives',
   '/founder': 'Founder Control Layer',
-  '/implementation': 'Implementation Roadmap',
 }
 
 export default function TopBar() {

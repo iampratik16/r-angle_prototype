@@ -46,7 +46,6 @@ npm run preview  # preview the production build
 | `/pitch` | Pitch Guidance & CRM |
 | `/performance` | Performance & Incentives (ISM) |
 | `/founder` | Founder Control Layer |
-| `/implementation` | Implementation Roadmap |
 
 ## 📁 Project Structure
 

@@ -433,34 +433,6 @@ export const founderControls = [
   },
 ]
 
-export const aiManagedServices = [
-  {
-    id: 'ai1',
-    role: 'AI Strategist',
-    scope: 'Audit & solution design',
-    detail: 'Maps the founder playbook, defines scoring rubric & success metrics.',
-  },
-  {
-    id: 'ai2',
-    role: 'ML Engineer',
-    scope: 'Model building & deployment',
-    detail: 'Builds the sentiment + intent-scoring models and live inference pipeline.',
-  },
-  {
-    id: 'ai3',
-    role: 'Data Engineer',
-    scope: 'Pipeline & integration',
-    detail: 'Connects Privyr, Tranzact, Dezylo & WhatsApp into one unified data layer.',
-  },
-]
-
-export const roadmapPhases = [
-  { id: 1, name: 'Data & Integration', detail: 'Unify Privyr, Tranzact, Dezylo, WhatsApp feeds', duration: 'Weeks 1–3', status: 'Active' },
-  { id: 2, name: 'Scoring & Sentiment Models', detail: 'Train intent score + NLP sentiment engine', duration: 'Weeks 4–7', status: 'Next' },
-  { id: 3, name: 'Live Guidance & CRM', detail: 'Deploy real-time pitch guidance + escalation', duration: 'Weeks 8–11', status: 'Planned' },
-  { id: 4, name: 'Optimization', detail: 'Continuous learning, A/B pitches, dashboards', duration: 'Weeks 12+', status: 'Planned' },
-]
-
 export const expectedImpact = [
   { label: 'Productivity Gains', value: 30, suffix: '%', note: 'across sales, design & ops teams' },
   { label: 'Revenue Growth', value: 25, suffix: '%', note: 'via AI-driven insights & routing' },

@@ -7,7 +7,6 @@ import {
   MessageSquareText,
   Trophy,
   ShieldCheck,
-  Map,
 } from 'lucide-react'
 import { cx } from '../lib/utils'
 
@@ -19,7 +18,6 @@ const nav = [
   { to: '/pitch', label: 'Pitch Guidance & CRM', icon: MessageSquareText },
   { to: '/performance', label: 'Performance & Incentives', icon: Trophy },
   { to: '/founder', label: 'Founder Control Layer', icon: ShieldCheck },
-  { to: '/implementation', label: 'Implementation Roadmap', icon: Map },
 ]
 
 export default function Sidebar() {
