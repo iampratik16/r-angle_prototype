@@ -19,7 +19,6 @@ import os from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { GoogleGenAI, createPartFromUri, createUserContent } from '@google/genai'
 import { Storage } from '@google-cloud/storage'
-import { analysisSchema } from './schema.js'
 import { SYSTEM_INSTRUCTION, buildUserInstruction } from './prompt.js'
 
 const {
@@ -43,29 +42,75 @@ const mode = GEMINI_API_KEY
     : null
 const configured = Boolean(mode)
 
+// 120s client timeout so a single request can never hang indefinitely.
+const httpOptions = { timeout: 120000 }
 let ai
 let storage
 if (mode === 'apikey') {
-  ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY })
+  ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY, httpOptions })
 } else if (mode === 'vertex') {
-  ai = new GoogleGenAI({ vertexai: true, project: GCP_PROJECT_ID, location: GCP_LOCATION })
+  ai = new GoogleGenAI({ vertexai: true, project: GCP_PROJECT_ID, location: GCP_LOCATION, httpOptions })
   if (GCS_BUCKET) storage = new Storage({ projectId: GCP_PROJECT_ID })
 }
 
-// @google/genai expects Schema.type as an uppercase enum ('OBJECT', 'STRING'…).
-// Our schema.js uses lowercase for readability — normalise just the `type` keys.
-function normaliseTypes(node) {
-  if (Array.isArray(node)) return node.map(normaliseTypes)
-  if (node && typeof node === 'object') {
-    const out = {}
-    for (const [k, v] of Object.entries(node)) {
-      out[k] = k === 'type' && typeof v === 'string' ? v.toUpperCase() : normaliseTypes(v)
-    }
-    return out
-  }
-  return node
+// Free/express-tier Gemini frequently returns 503 (overloaded) or 429
+// (quota) on individual models. Try the configured model first, then fall
+// back through known-good flash models, with exponential backoff per model.
+const MODEL_CHAIN = [...new Set([GEMINI_MODEL, 'gemini-flash-latest', 'gemini-2.0-flash'])]
+
+// NOTE: we deliberately do NOT use a strict responseSchema. Constrained-schema
+// decoding makes flash models loop into giant run-on output (MAX_TOKENS,
+// invalid JSON). The exact JSON shape is specified in the prompt instead
+// (see prompt.js), which is fast, concise and reliable.
+const GEN_CONFIG = {
+  systemInstruction: SYSTEM_INSTRUCTION,
+  responseMimeType: 'application/json',
+  temperature: 0.4,
+  maxOutputTokens: 16000,
+  thinkingConfig: { thinkingBudget: 0 }, // off = faster, avoids runaway loops
 }
-const responseSchema = normaliseTypes(analysisSchema)
+
+// Tolerantly extract a JSON object from the model text (strip code fences,
+// take the outermost {...} if there's any stray prose).
+function parseJson(text) {
+  let t = (text || '').trim()
+  t = t.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim()
+  try {
+    return JSON.parse(t)
+  } catch {
+    const first = t.indexOf('{')
+    const last = t.lastIndexOf('}')
+    if (first !== -1 && last > first) return JSON.parse(t.slice(first, last + 1))
+    throw new SyntaxError('No JSON object found in model output')
+  }
+}
+
+// Returns parsed analysis. Retries on transient errors (503/429/timeout) AND
+// on malformed JSON, falling back across models.
+async function generateAnalysis(parts) {
+  let lastErr
+  for (const model of MODEL_CHAIN) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const resp = await ai.models.generateContent({
+          model,
+          contents: createUserContent(parts),
+          config: GEN_CONFIG,
+        })
+        const analysis = parseJson(resp.text) // throws -> retried
+        return { analysis, modelUsed: model }
+      } catch (e) {
+        lastErr = e
+        const transient =
+          e instanceof SyntaxError ||
+          /503|UNAVAILABLE|overloaded|high demand|504|deadline|timeout|429|RESOURCE_EXHAUSTED|quota/i.test(e?.message || '')
+        if (!transient) throw e
+        await sleep(1000 * 2 ** attempt) // 1s, 2s, 4s
+      }
+    }
+  }
+  throw lastErr
+}
 
 const mimeByExt = {
   '.mp3': 'audio/mpeg',
@@ -143,25 +188,7 @@ app.post('/api/analyze', upload.single('audio'), async (req, res) => {
       filePart = createPartFromUri(audioUri, mimeType)
     }
 
-    const resp = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: createUserContent([filePart, buildUserInstruction(meta)]),
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        responseMimeType: 'application/json',
-        responseSchema,
-        temperature: 0.4,
-        maxOutputTokens: 20000,
-      },
-    })
-
-    const raw = resp.text || '{}'
-    let analysis
-    try {
-      analysis = JSON.parse(raw)
-    } catch {
-      return res.status(502).json({ error: 'Gemini returned malformed JSON.', raw: raw.slice(0, 2000) })
-    }
+    const { analysis, modelUsed } = await generateAnalysis([filePart, buildUserInstruction(meta)])
 
     const record = {
       id,
@@ -170,6 +197,7 @@ app.post('/api/analyze', upload.single('audio'), async (req, res) => {
       fileName: req.file.originalname,
       audioUri,
       mode,
+      modelUsed,
       analysis,
     }
 
