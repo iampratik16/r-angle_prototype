@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Backend that analyses call recordings with Gemini (AI Studio API key or Vertex AI).",
+  "description": "Backend that analyses call recordings with AI (AI Studio API key or Vertex AI).",
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js"

@@ -1,9 +1,9 @@
 // =====================================================================
 // R Angle — Call Analysis API
-// Upload a call recording -> Gemini analyses it -> structured report.
+// Upload a call recording -> AI analyses it -> structured report.
 //
 // Two providers, auto-selected from server/.env:
-//   • GEMINI_API_KEY set        -> Google AI Studio (Gemini Files API).
+//   • GEMINI_API_KEY set        -> Google AI Studio (Files API).
 //                                  No GCP roles / bucket needed. Easiest.
 //   • else Vertex AI creds set  -> Vertex AI + Cloud Storage (GCP credit).
 // Analyses are persisted to server/data/*.json so history survives restarts.
@@ -53,7 +53,7 @@ if (mode === 'apikey') {
   if (GCS_BUCKET) storage = new Storage({ projectId: GCP_PROJECT_ID })
 }
 
-// Free/express-tier Gemini frequently returns 503 (overloaded) or 429
+// Free/express-tier AI models frequently return 503 (overloaded) or 429
 // (quota) on individual models. Try the configured model first, then fall
 // back through known-good flash models, with exponential backoff per model.
 const MODEL_CHAIN = [...new Set([GEMINI_MODEL, 'gemini-flash-latest', 'gemini-2.0-flash'])]
@@ -147,7 +147,7 @@ app.get('/api/health', (_req, res) => {
 app.post('/api/analyze', upload.single('audio'), async (req, res) => {
   if (!configured) {
     return res.status(503).json({
-      error: 'No Gemini provider configured. Set GEMINI_API_KEY (or Vertex creds) in server/.env and restart.',
+      error: 'No AI provider configured. Set GEMINI_API_KEY (or Vertex creds) in server/.env and restart.',
     })
   }
   if (!req.file) {
@@ -169,7 +169,7 @@ app.post('/api/analyze', upload.single('audio'), async (req, res) => {
     let audioUri = null
 
     if (mode === 'apikey') {
-      // Upload via the Gemini Files API and wait until it's ACTIVE.
+      // Upload via the Files API and wait until it's ACTIVE.
       let f = await ai.files.upload({ file: req.file.path, config: { mimeType } })
       let tries = 0
       while (f.state === 'PROCESSING' && tries < 90) {
@@ -177,7 +177,7 @@ app.post('/api/analyze', upload.single('audio'), async (req, res) => {
         f = await ai.files.get({ name: f.name })
         tries++
       }
-      if (f.state === 'FAILED') throw new Error('Gemini could not process the audio file.')
+      if (f.state === 'FAILED') throw new Error('The AI could not process the audio file.')
       filePart = createPartFromUri(f.uri, f.mimeType || mimeType)
       audioUri = f.uri
     } else {

@@ -117,9 +117,9 @@ export default function CallAnalysis() {
     <div className="space-y-6">
       <PageHeader
         title="Call Analysis"
-        subtitle="Upload a recording — Gemini produces a full transcript, sentiment, emotion, intent & coaching report"
+        subtitle="Upload a recording — AI produces a full transcript, sentiment, emotion, intent & coaching report"
       >
-        <Badge color="teal" dot="bg-accent">Powered by Vertex AI · Gemini</Badge>
+        <Badge color="teal" dot="bg-accent">Powered by AI</Badge>
       </PageHeader>
 
       {/* Setup banner */}
@@ -231,7 +231,7 @@ export default function CallAnalysis() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <Card className="p-8 text-center">
               <Loader2 size={28} className="mx-auto animate-spin text-accent" />
-              <div className="mt-3 font-semibold text-ink-900">Gemini is listening to the call…</div>
+              <div className="mt-3 font-semibold text-ink-900">AI is listening to the call…</div>
               <div className="text-sm text-ink-400 mt-1">
                 Transcribing, scoring sentiment & emotion, and writing coaching notes. This can take 20–60s.
               </div>

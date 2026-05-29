@@ -1,6 +1,6 @@
 # R Angle — Call Analysis API
 
-Uploads a call recording to **Google Cloud Storage**, analyses it with **Vertex AI Gemini**, and returns a structured report (transcript, sentiment, emotion, pauses, tone shifts, intent, mood, scores, insights, recommendations, coaching script).
+Uploads a call recording to **Google Cloud Storage**, analyses it with an **AI model**, and returns a structured report (transcript, sentiment, emotion, pauses, tone shifts, intent, mood, scores, insights, recommendations, coaching script).
 
 ## Run
 
